@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Jogo de Desvio Meme Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Impact&family=Open+Sans:wght@800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #ffeb3b;
+            color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Estrutura das Telas */
+        .screen {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            text-align: center;
+            background-color: #ffeb3b;
+            padding: 10px;
+            z-index: 1;
+        }
+
+        .active {
+            display: flex;
+        }
+
+        /* Títulos Responsivos */
+        h1 {
+            font-family: 'Impact', sans-serif;
+            font-size: min(7vh, 2.2rem);
+            color: #ffffff;
+            text-shadow: 3px 3px 0px #000, -3px -3px 0px #000, 3px -3px 0px #000, -3px 3px 0px #000;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .credit-text {
+            font-family: 'Impact', sans-serif;
+            font-size: min(6vh, 2rem);
+            color: #ff1744;
+            text-shadow: 2px 2px 0px #000;
+            margin-bottom: 20px;
+        }
+
+        /* Container de Dispositivos */
+        .device-container {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .device-card {
+            background: #ffffff;
+            border: 4px solid #000000;
+            border-radius: 15px;
+            padding: 10px;
+            cursor: pointer;
+            width: 130px;
+            box-shadow: 6px 6px 0px #000000;
+            transition: transform 0.1s;
+        }
+
+        .device-card:active {
+            transform: translate(3px, 3px);
+            box-shadow: 3px 3px 0px #000000;
+        }
+
+        .device-card img {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+            margin-bottom: 5px;
+        }
+
+        .device-card p {
+            font-family: 'Impact', sans-serif;
+            font-size: 1.4rem;
+            color: #000000;
+        }
+
+        /* Loja de Skins */
+        .skins-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .skin-card {
+            background: #ffffff;
+            border: 4px solid #000;
+            border-radius: 15px;
+            padding: 8px;
+            width: 100px;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px #000;
+            transition: transform 0.1s, border-color 0.2s;
+            position: relative;
+        }
+
+        .skin-card.selected {
+            border-color: #00e676;
+            background-color: #e8f5e9;
+            transform: scale(1.05);
+            box-shadow: 6px 6px 0px #00e676;
+        }
+
+        .skin-card.locked {
+            opacity: 0.6;
+            background-color: #e0e0e0;
+        }
+
+        .skin-card img {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            margin-bottom: 3px;
+        }
+
+        .skin-card p {
+            font-family: 'Impact', sans-serif;
+            font-size: 1rem;
+        }
+
+        .skin-req {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #d50000;
+        }
+
+        /* Aviso Customizado na Loja */
+        #shop-toast {
+            visibility: hidden;
+            background-color: #ff1744;
+            color: #fff;
+            font-family: 'Impact', sans-serif;
+            font-size: 1.2rem;
+            border: 3px solid #000;
+            border-radius: 10px;
+            padding: 8px 15px;
+            margin-bottom: 10px;
+            box-shadow: 4px 4px 0px #000;
+            text-shadow: 1px 1px 0px #000;
+        }
+
+        #shop-toast.show {
+            visibility: visible;
+            animation: fadeInOut 2s;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* Botões Compactos */
+        .btn {
+            background-color: #00e676;
+            color: #ffffff;
+            font-family: 'Impact', sans-serif;
+            font-size: min(5vh, 1.5rem);
+            border: 4px solid #000;
+            padding: 8px 15px;
+            margin: 4px;
+            border-radius: 14px;
+            cursor: pointer;
+            width: min(80vw, 240px);
+            box-shadow: 5px 5px 0px #000;
+            text-shadow: 2px 2px 0px #000;
+            transition: transform 0.1s;
+        }
+
+        .btn:active {
+            transform: translate(3px, 3px);
+            box-shadow: 2px 2px 0px #000;
+        }
+
+        .btn-shop { background-color: #ff9800; }
+        .btn-credits { background-color: #29b6f6; }
+        .btn-back { background-color: #ff5252; }
+
+        /* HUD do Jogo */
+        #hud {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-family: 'Impact', sans-serif;
+            font-size: 2.2rem;
+            color: #fff;
+            text-shadow: 3px 3px 0px #000, -3px -3px 0px #000, 3px -3px 0px #000, -3px 3px 0px #000;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* Botão de Pause */
+        #btn-pause {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 50px;
+            height: 50px;
+            background-color: #ff9800;
+            border: 3px solid #000;
+            border-radius: 12px;
+            font-family: 'Impact', sans-serif;
+            font-size: 1.6rem;
+            color: #fff;
+            text-shadow: 2px 2px 0px #000;
+            box-shadow: 3px 3px 0px #000;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        /* Overlay do Pause */
+        #screen-pause {
+            background-color: rgba(0, 0, 0, 0.85);
+            z-index: 20;
+        }
+
+        /* Mensagem de Início de Jogo */
+        #tap-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Impact', sans-serif;
+            font-size: min(6vh, 2.2rem);
+            color: #ffff00;
+            text-shadow: 3px 3px 0px #000, -3px -3px 0px #000;
+            z-index: 10;
+            pointer-events: none;
+            text-align: center;
+            width: 90%;
+        }
+
+        /* Tela de Morte */
+        #screen-death {
+            background-color: rgba(255, 23, 68, 0.95);
+        }
+
+        .death-title {
+            font-family: 'Impact', sans-serif;
+            font-size: min(8vh, 3.2rem);
+            color: #ffff00;
+            text-shadow: 4px 4px 0px #000;
+            margin-bottom: 5px;
+            animation: shake 0.3s infinite;
+        }
+
+        .death-score {
+            font-family: 'Impact', sans-serif;
+            font-size: min(5vh, 2rem);
+            color: #ffffff;
+            text-shadow: 2px 2px 0px #000;
+            margin-bottom: 20px;
+        }
+
+        #game-canvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+            background-color: #81d4fa;
+        }
+
+        @keyframes shake {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(-3deg); }
+            75% { transform: rotate(3deg); }
+            100% { transform: rotate(0deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. TELA SELEÇÃO DE DISPOSITIVO -->
+    <div id="screen-device" class="screen active">
+        <h1>QUAL SEU APARELHO?</h1>
+        <div class="device-container">
+            <div class="device-card" onclick="selectDevice('screen-pc')">
+                <img src="pc.jpg" alt="PC">
+                <p>PC</p>
+            </div>
+            <div class="device-card" onclick="selectDevice('screen-menu')">
+                <img src="celular.png" alt="Celular">
+                <p>CELULAR</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. TELA EM BREVE (PC) -->
+    <div id="screen-pc" class="screen">
+        <h1>EM BREVE!</h1>
+        <p style="font-family: 'Impact'; font-size: 1.5rem; color: #fff; text-shadow: 2px 2px 0 #000; margin-bottom: 15px;">O PC AINDA NÃO TÁ PRONTO KK</p>
+        <button class="btn btn-back" onclick="showScreen('screen-device')">VOLTAR</button>
+    </div>
+
+    <!-- 3. TELA MENU DO CELULAR -->
+    <div id="screen-menu" class="screen">
+        <h1>BORA JOGAR?</h1>
+        <button class="btn" onclick="startGame()">PLAY</button>
+        <button class="btn btn-shop" onclick="showScreen('screen-shop')">LOJA DE SKINS</button>
+        <button class="btn btn-credits" onclick="showScreen('screen-credits')">CRÉDITOS</button>
+        <button class="btn btn-back" onclick="showScreen('screen-device')">TROCAR</button>
+    </div>
+
+    <!-- 4. LOJA DE SKINS -->
+    <div id="screen-shop" class="screen">
+        <h1>LOJA DE SKINS</h1>
+        <p style="font-family: 'Impact'; color: #fff; text-shadow: 2px 2px 0 #000; margin-bottom: 10px; font-size: 1.2rem;">
+            RECORDE: <span id="high-score-display">0</span> PTS
+        </p>
+        <div id="shop-toast">PRECISA DE MAIS PONTOS!</div>
+        <div class="skins-container">
+            <div class="skin-card selected" id="card-skin1" onclick="selectSkin('jogador.jpg', 'card-skin1', 0)">
+                <img src="jogador.jpg" alt="Skin 1">
+                <p>SKIN 1</p>
+                <span class="skin-req">GRÁTIS</span>
+            </div>
+            <div class="skin-card locked" id="card-skin2" onclick="selectSkin('skin2.jpg', 'card-skin2', 10)">
+                <img src="skin2.jpg" alt="Skin 2">
+                <p>SKIN 2</p>
+                <span class="skin-req" id="req-skin2">10 PTS</span>
+            </div>
+            <div class="skin-card locked" id="card-skin3" onclick="selectSkin('skin3.jpg', 'card-skin3', 20)">
+                <img src="skin3.jpg" alt="Skin 3">
+                <p>SKIN 3</p>
+                <span class="skin-req" id="req-skin3">20 PTS</span>
+            </div>
+        </div>
+        <button class="btn btn-back" onclick="showScreen('screen-menu')">VOLTAR</button>
+    </div>
+
+    <!-- 5. TELA CRÉDITOS -->
+    <div id="screen-credits" class="screen">
+        <p class="credit-text">FEITO PELO FELIPE GABRIEL</p>
+        <button class="btn btn-back" onclick="showScreen('screen-menu')">VOLTAR</button>
+    </div>
+
+    <!-- 6. TELA PAUSE -->
+    <div id="screen-pause" class="screen">
+        <h1>PAUSADO</h1>
+        <button class="btn" onclick="resumeGame()">CONTINUAR</button>
+        <button class="btn btn-back" onclick="showScreen('screen-menu')">MENU</button>
+    </div>
+
+    <!-- 7. TELA DE MORTE -->
+    <div id="screen-death" class="screen">
+        <h1 class="death-title">SE FUDEU!</h1>
+        <p class="death-score">PONTOS: <span id="final-score">0</span></p>
+        <button class="btn" onclick="startGame()">DE NOVO</button>
+        <button class="btn btn-back" onclick="showScreen('screen-menu')">MENU</button>
+    </div>
+
+    <!-- 8. TELA DO JOGO -->
+    <div id="screen-game" class="screen" style="padding:0;">
+        <div id="hud">PONTOS: <span id="score">0</span></div>
+        <button id="btn-pause" onclick="pauseGame()">||</button>
+        <div id="tap-message" style="display: none;">TOQUE PARA COMEÇAR</div>
+        <canvas id="game-canvas"></canvas>
+    </div>
+
+    <script>
+        let selectedSkinSrc = "jogador.jpg";
+        const enemyImgSrc1 = "inimigo.png";
+        const enemyImgSrc2 = "inimigo2.png";
+
+        let highScore = 0;
+
+        let playerImg = new Image();
+        playerImg.src = selectedSkinSrc;
+
+        const enemyImg1 = new Image();
+        enemyImg1.src = enemyImgSrc1;
+
+        const enemyImg2 = new Image();
+        enemyImg2.src = enemyImgSrc2;
+
+        function updateShopUI() {
+            document.getElementById('high-score-display').innerText = highScore;
+
+            if (highScore >= 10) {
+                document.getElementById('card-skin2').classList.remove('locked');
+                document.getElementById('req-skin2').innerText = "DESBLOQUEADO";
+                document.getElementById('req-skin2').style.color = "#00e676";
+            }
+            if (highScore >= 20) {
+                document.getElementById('card-skin3').classList.remove('locked');
+                document.getElementById('req-skin3').innerText = "DESBLOQUEADO";
+                document.getElementById('req-skin3').style.color = "#00e676";
+            }
+        }
+
+        function showShopToast(msg) {
+            const toast = document.getElementById('shop-toast');
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        function selectSkin(skinSrc, cardId, requiredPoints) {
+            if (highScore < requiredPoints) {
+                showShopToast(`FAÇA ${requiredPoints} PONTOS PARA LIBERAR!`);
+                return;
+            }
+
+            selectedSkinSrc = skinSrc;
+            playerImg.src = selectedSkinSrc;
+            
+            document.querySelectorAll('.skin-card').forEach(c => c.classList.remove('selected'));
+            document.getElementById(cardId).classList.add('selected');
+        }
+
+        function openFullscreen() {
+            let elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(() => {});
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
+        }
+
+        function selectDevice(targetScreen) {
+            openFullscreen();
+            showScreen(targetScreen);
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            if (screenId === 'screen-shop') {
+                updateShopUI();
+            }
+        }
+
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const finalScoreElement = document.getElementById('final-score');
+        const tapMessage = document.getElementById('tap-message');
+
+        let animationId;
+        let score = 0;
+        let isGameOver = false;
+        let isPaused = false;
+        let waitingForTap = true;
+
+        const player = {
+            x: 50,
+            y: 0,
+            size: 50,
+            gravity: 0.5,
+            lift: -11,
+            velocity: 0,
+            
+            draw() {
+                ctx.drawImage(playerImg, this.x, this.y, this.size, this.size);
+            },
+            
+            update() {
+                if (waitingForTap || isPaused) return;
+
+                this.velocity += this.gravity;
+                this.y += this.velocity;
+
+                if (this.y < 0) {
+                    this.y = 0;
+                    this.velocity = 0;
+                }
+
+                if (this.y + this.size > canvas.height) {
+                    this.y = canvas.height - this.size;
+                    this.velocity = 0;
+                }
+            },
+
+            jump() {
+                this.velocity = this.lift;
+            }
+        };
+
+        let enemies = [];
+        let spawnTimer = 0;
+
+        function createEnemy() {
+            const size = Math.random() * (150 - 110) + 110;
+            const y = Math.random() * (canvas.height - size);
+            
+            let chosenImg = enemyImg1;
+            if (score >= 67) {
+                chosenImg = Math.random() < 0.5 ? enemyImg1 : enemyImg2;
+            }
+
+            enemies.push({
+                x: canvas.width,
+                y: y,
+                size: size,
+                speed: Math.random() * (6 - 4) + 4 + (score * 0.12),
+                img: chosenImg
+            });
+        }
+
+        function startGame() {
+            if (animationId) cancelAnimationFrame(animationId);
+            
+            showScreen('screen-game');
+            
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            player.y = canvas.height / 2;
+            player.velocity = 0;
+            enemies = [];
+            score = 0;
+            scoreElement.innerText = score;
+            isGameOver = false;
+            isPaused = false;
+            waitingForTap = true;
+            spawnTimer = 0;
+
+            tapMessage.style.display = 'block';
+
+            gameLoop();
+        }
+
+        function pauseGame() {
+            if (isGameOver || waitingForTap) return;
+            isPaused = true;
+            document.getElementById('screen-pause').classList.add('active');
+        }
+
+        function resumeGame() {
+            document.getElementById('screen-pause').classList.remove('active');
+            isPaused = false;
+            waitingForTap = true;
+            tapMessage.style.display = 'block';
+        }
+
+        function handleTap(e) {
+            if (e.target.id === 'btn-pause') return;
+            if (isGameOver || isPaused) return;
+
+            if (waitingForTap) {
+                waitingForTap = false;
+                tapMessage.style.display = 'none';
+            }
+
+            player.jump();
+        }
+
+        window.addEventListener('touchstart', handleTap);
+        window.addEventListener('mousedown', handleTap);
+
+        function gameOver() {
+            isGameOver = true;
+            cancelAnimationFrame(animationId);
+            
+            if (score > highScore) {
+                highScore = score;
+            }
+
+            finalScoreElement.innerText = score;
+            showScreen('screen-death');
+        }
+
+        function gameLoop() {
+            if (isGameOver) return;
+
+            ctx.fillStyle = '#81d4fa';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            player.update();
+            player.draw();
+
+            if (!waitingForTap && !isPaused) {
+                spawnTimer++;
+                if (spawnTimer % 80 === 0) {
+                    createEnemy();
+                }
+
+                for (let i = enemies.length - 1; i >= 0; i--) {
+                    let e = enemies[i];
+                    e.x -= e.speed;
+
+                    ctx.drawImage(e.img, e.x, e.y, e.size, e.size);
+
+                    let padding = 6;
+                    if (
+                        player.x + padding < e.x + e.size &&
+                        player.x + player.size - padding > e.x &&
+                        player.y + padding < e.y + e.size &&
+                        player.y + player.size - padding > e.y
+                    ) {
+                        gameOver();
+                        return;
+                    }
+
+                    if (e.x + e.size < 0) {
+                        enemies.splice(i, 1);
+                        score++;
+                        scoreElement.innerText = score;
+                    }
+                }
+            } else {
+                for (let i = 0; i < enemies.length; i++) {
+                    let e = enemies[i];
+                    ctx.drawImage(e.img, e.x, e.y, e.size, e.size);
+                }
+            }
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        window.addEventListener('resize', () => {
+            if (document.getElementById('screen-game').classList.contains('active')) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+        });
+    </script>
+</body>
+</html>
+
